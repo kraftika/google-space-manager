@@ -1,6 +1,5 @@
 import { AuthStatus, ScanResult } from '../types/drive';
 import { GmailSearchResult, GmailTemplates } from '../types/gmail';
-import { PhotosResult } from '../types/photos';
 
 export class ScopeError extends Error {
   constructor() {
@@ -9,10 +8,18 @@ export class ScopeError extends Error {
   }
 }
 
+export class ReauthError extends Error {
+  constructor(message?: string) {
+    super(message ?? 'Re-authentication required');
+    this.name = 'ReauthError';
+  }
+}
+
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, { credentials: 'include', ...options });
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as { error?: string; message?: string };
+    if (body.error === 'REAUTH_REQUIRED') throw new ReauthError(body.message);
     if (body.error === 'INSUFFICIENT_SCOPE') throw new ScopeError();
     throw new Error(body.message ?? `HTTP ${res.status}`);
   }
@@ -61,15 +68,3 @@ export const searchGmail = (template: string, pageToken?: string) => {
 
 export const trashEmails = (messageIds: string[]) =>
   apiFetch<{ ok: boolean; count: number }>('/api/gmail/trash', jsonPost({ messageIds }));
-
-// ── Photos ────────────────────────────────────────
-
-export const listPhotos = (pageToken?: string) => {
-  const params = new URLSearchParams();
-  if (pageToken) params.set('pageToken', pageToken);
-  const qs = params.toString();
-  return apiFetch<PhotosResult>(`/api/photos/list${qs ? `?${qs}` : ''}`);
-};
-
-export const deletePhotos = (mediaItemIds: string[]) =>
-  apiFetch<{ ok: boolean; count: number }>('/api/photos/delete', jsonPost({ mediaItemIds }));

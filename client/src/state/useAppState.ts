@@ -1,12 +1,11 @@
 import React, { createContext, useContext, useReducer, useCallback, useMemo, useEffect } from 'react';
 import { AuthStatus, DriveNode, ScanResult } from '../types/drive';
 import { GmailSearchResult } from '../types/gmail';
-import { PhotoItem, PhotosResult, PhotosSortOption } from '../types/photos';
 import * as api from '../api/client';
 
 type Screen = 'loading-auth' | 'login' | 'scanning' | 'main' | 'error';
 type OwnerFilter = 'owned' | 'all';
-type ActiveTab = 'tree' | 'breakdown' | 'gmail' | 'photos';
+type ActiveTab = 'tree' | 'breakdown' | 'gmail';
 export type SortOption = 'size-desc' | 'size-asc' | 'name-asc' | 'name-desc';
 
 interface AppData {
@@ -22,12 +21,6 @@ interface AppData {
   gmailLoading: boolean;
   gmailSelectedIds: Set<string>;
   gmailScopeError: boolean;
-  // Photos
-  photosResult: PhotosResult | null;
-  photosLoading: boolean;
-  photosSelectedIds: Set<string>;
-  photosScopeError: boolean;
-  photosSortOption: PhotosSortOption;
 }
 
 type Action =
@@ -48,16 +41,6 @@ type Action =
   | { type: 'GMAIL_SELECT_ALL' }
   | { type: 'GMAIL_CLEAR_SELECTION' }
   | { type: 'GMAIL_REMOVE_IDS'; ids: string[] }
-  // Photos
-  | { type: 'PHOTOS_LOADING' }
-  | { type: 'PHOTOS_RESULT'; result: PhotosResult; append: boolean }
-  | { type: 'PHOTOS_SCOPE_ERROR' }
-  | { type: 'PHOTOS_ERROR' }
-  | { type: 'PHOTOS_TOGGLE'; id: string }
-  | { type: 'PHOTOS_SELECT_ALL' }
-  | { type: 'PHOTOS_CLEAR_SELECTION' }
-  | { type: 'PHOTOS_REMOVE_IDS'; ids: string[] }
-  | { type: 'PHOTOS_SET_SORT'; option: PhotosSortOption }
   | { type: 'RESET_MEDIA' };
 
 const mediaInitial = {
@@ -65,11 +48,6 @@ const mediaInitial = {
   gmailLoading: false,
   gmailSelectedIds: new Set<string>(),
   gmailScopeError: false,
-  photosResult: null,
-  photosLoading: false,
-  photosSelectedIds: new Set<string>(),
-  photosScopeError: false,
-  photosSortOption: 'date-desc' as PhotosSortOption,
 };
 
 const initial: AppData = {
@@ -151,55 +129,8 @@ function reducer(state: AppData, action: Action): AppData {
       };
     }
 
-    // ── Photos ──
-    case 'PHOTOS_LOADING':
-      return { ...state, photosLoading: true, photosScopeError: false };
-    case 'PHOTOS_RESULT': {
-      const items = action.append && state.photosResult
-        ? [...state.photosResult.items, ...action.result.items]
-        : action.result.items;
-      return {
-        ...state,
-        photosLoading: false,
-        photosResult: { ...action.result, items },
-        photosSelectedIds: action.append ? state.photosSelectedIds : new Set(),
-      };
-    }
-    case 'PHOTOS_SCOPE_ERROR':
-      return { ...state, photosLoading: false, photosScopeError: true };
-    case 'PHOTOS_ERROR':
-      return { ...state, photosLoading: false };
-    case 'PHOTOS_TOGGLE': {
-      const next = new Set(state.photosSelectedIds);
-      if (next.has(action.id)) next.delete(action.id); else next.add(action.id);
-      return { ...state, photosSelectedIds: next };
-    }
-    case 'PHOTOS_SELECT_ALL': {
-      const all = state.photosResult?.items.map(i => i.id) ?? [];
-      const next = state.photosSelectedIds.size === all.length
-        ? new Set<string>()
-        : new Set(all);
-      return { ...state, photosSelectedIds: next };
-    }
-    case 'PHOTOS_CLEAR_SELECTION':
-      return { ...state, photosSelectedIds: new Set() };
-    case 'PHOTOS_REMOVE_IDS': {
-      if (!state.photosResult) return state;
-      const remove = new Set(action.ids);
-      return {
-        ...state,
-        photosResult: {
-          ...state.photosResult,
-          items: state.photosResult.items.filter(i => !remove.has(i.id)),
-        },
-        photosSelectedIds: new Set(),
-      };
-    }
-    case 'PHOTOS_SET_SORT':
-      return { ...state, photosSortOption: action.option };
-
     case 'RESET_MEDIA':
-      return { ...state, ...mediaInitial, gmailSelectedIds: new Set(), photosSelectedIds: new Set() };
+      return { ...state, ...mediaInitial, gmailSelectedIds: new Set() };
   }
 }
 
@@ -231,17 +162,6 @@ function sortNode(node: DriveNode, opt: SortOption): DriveNode {
   return { ...node, children: children.map(c => sortNode(c, opt)) };
 }
 
-function sortPhotos(items: PhotoItem[], opt: PhotosSortOption): PhotoItem[] {
-  return [...items].sort((a, b) => {
-    switch (opt) {
-      case 'date-desc': return b.creationTime.localeCompare(a.creationTime);
-      case 'date-asc':  return a.creationTime.localeCompare(b.creationTime);
-      case 'name-asc':  return a.filename.localeCompare(b.filename);
-      case 'name-desc': return b.filename.localeCompare(a.filename);
-    }
-  });
-}
-
 export interface AppContextValue {
   screen: Screen;
   authStatus: AuthStatus | null;
@@ -270,20 +190,6 @@ export interface AppContextValue {
   toggleEmailSelection: (id: string) => void;
   selectAllEmails: () => void;
   clearEmailSelection: () => void;
-  // Photos
-  photosResult: PhotosResult | null;
-  photosLoading: boolean;
-  photosSelectedIds: Set<string>;
-  photosScopeError: boolean;
-  photosSortOption: PhotosSortOption;
-  filteredPhotos: PhotoItem[];
-  loadPhotos: () => void;
-  loadMorePhotos: () => void;
-  deleteSelectedPhotos: () => void;
-  togglePhotoSelection: (id: string) => void;
-  selectAllPhotos: () => void;
-  clearPhotoSelection: () => void;
-  setPhotosSortOption: (opt: PhotosSortOption) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -297,6 +203,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const scanResult = await api.scanDrive();
       dispatch({ type: 'SCAN_DONE', scanResult });
     } catch (e) {
+      if (e instanceof api.ReauthError) { api.triggerLogin(); return; }
       dispatch({ type: 'ERROR', message: e instanceof Error ? e.message : String(e) });
     }
   }, []);
@@ -358,6 +265,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const result = await api.searchGmail(template);
       dispatch({ type: 'GMAIL_RESULT', result, append: false });
     } catch (e) {
+      if (e instanceof api.ReauthError) { api.triggerLogin(); return; }
       if (e instanceof api.ScopeError) dispatch({ type: 'GMAIL_SCOPE_ERROR' });
       else dispatch({ type: 'GMAIL_ERROR' });
     }
@@ -371,6 +279,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const result = await api.searchGmail(current.template, current.nextPageToken);
       dispatch({ type: 'GMAIL_RESULT', result, append: true });
     } catch (e) {
+      if (e instanceof api.ReauthError) { api.triggerLogin(); return; }
       if (e instanceof api.ScopeError) dispatch({ type: 'GMAIL_SCOPE_ERROR' });
       else dispatch({ type: 'GMAIL_ERROR' });
     }
@@ -383,6 +292,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await api.trashEmails(ids);
       dispatch({ type: 'GMAIL_REMOVE_IDS', ids });
     } catch (e) {
+      if (e instanceof api.ReauthError) { api.triggerLogin(); return; }
       if (e instanceof api.ScopeError) dispatch({ type: 'GMAIL_SCOPE_ERROR' });
     }
   }, [state.gmailSelectedIds]);
@@ -390,48 +300,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const toggleEmailSelection = useCallback((id: string) => dispatch({ type: 'GMAIL_TOGGLE', id }), []);
   const selectAllEmails = useCallback(() => dispatch({ type: 'GMAIL_SELECT_ALL' }), []);
   const clearEmailSelection = useCallback(() => dispatch({ type: 'GMAIL_CLEAR_SELECTION' }), []);
-
-  // ── Photos actions ──
-
-  const loadPhotos = useCallback(async () => {
-    dispatch({ type: 'PHOTOS_LOADING' });
-    try {
-      const result = await api.listPhotos();
-      dispatch({ type: 'PHOTOS_RESULT', result, append: false });
-    } catch (e) {
-      if (e instanceof api.ScopeError) dispatch({ type: 'PHOTOS_SCOPE_ERROR' });
-      else dispatch({ type: 'PHOTOS_ERROR' });
-    }
-  }, []);
-
-  const loadMorePhotos = useCallback(async () => {
-    const current = state.photosResult;
-    if (!current?.nextPageToken) return;
-    dispatch({ type: 'PHOTOS_LOADING' });
-    try {
-      const result = await api.listPhotos(current.nextPageToken);
-      dispatch({ type: 'PHOTOS_RESULT', result, append: true });
-    } catch (e) {
-      if (e instanceof api.ScopeError) dispatch({ type: 'PHOTOS_SCOPE_ERROR' });
-      else dispatch({ type: 'PHOTOS_ERROR' });
-    }
-  }, [state.photosResult]);
-
-  const deleteSelectedPhotos = useCallback(async () => {
-    const ids = [...state.photosSelectedIds];
-    if (ids.length === 0) return;
-    try {
-      await api.deletePhotos(ids);
-      dispatch({ type: 'PHOTOS_REMOVE_IDS', ids });
-    } catch (e) {
-      if (e instanceof api.ScopeError) dispatch({ type: 'PHOTOS_SCOPE_ERROR' });
-    }
-  }, [state.photosSelectedIds]);
-
-  const togglePhotoSelection = useCallback((id: string) => dispatch({ type: 'PHOTOS_TOGGLE', id }), []);
-  const selectAllPhotos = useCallback(() => dispatch({ type: 'PHOTOS_SELECT_ALL' }), []);
-  const clearPhotoSelection = useCallback(() => dispatch({ type: 'PHOTOS_CLEAR_SELECTION' }), []);
-  const setPhotosSortOption = useCallback((opt: PhotosSortOption) => dispatch({ type: 'PHOTOS_SET_SORT', option: opt }), []);
 
   const filteredTree = useMemo(() => {
     if (!state.scanResult) return null;
@@ -441,11 +309,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         : pruneAndRecompute(state.scanResult.tree);
     return sortNode(pruned, state.sortOption);
   }, [state.scanResult, state.ownerFilter, state.sortOption]);
-
-  const filteredPhotos = useMemo(() => {
-    if (!state.photosResult) return [];
-    return sortPhotos(state.photosResult.items, state.photosSortOption);
-  }, [state.photosResult, state.photosSortOption]);
 
   const value: AppContextValue = {
     screen: state.screen,
@@ -474,19 +337,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     toggleEmailSelection,
     selectAllEmails,
     clearEmailSelection,
-    photosResult: state.photosResult,
-    photosLoading: state.photosLoading,
-    photosSelectedIds: state.photosSelectedIds,
-    photosScopeError: state.photosScopeError,
-    photosSortOption: state.photosSortOption,
-    filteredPhotos,
-    loadPhotos,
-    loadMorePhotos,
-    deleteSelectedPhotos,
-    togglePhotoSelection,
-    selectAllPhotos,
-    clearPhotoSelection,
-    setPhotosSortOption,
   };
 
   return React.createElement(AppContext.Provider, { value }, children);

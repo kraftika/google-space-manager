@@ -1,9 +1,32 @@
-import { useEffect, useState } from 'react';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Trash2, AlertTriangle, ChevronUp, ChevronDown } from 'lucide-react';
 import { useAppState } from '../../state/useAppState';
 import { getGmailTemplates, triggerLogin } from '../../api/client';
-import { GmailTemplates } from '../../types/gmail';
+import { GmailMessage, GmailTemplates } from '../../types/gmail';
 import EmailRow from './EmailRow';
+
+type SortKey = 'from' | 'subject' | 'date' | 'size';
+type SortDir = 'asc' | 'desc';
+
+// Size and date are most useful largest/newest-first; text columns A→Z.
+const DEFAULT_DIR: Record<SortKey, SortDir> = {
+  from: 'asc', subject: 'asc', date: 'desc', size: 'desc',
+};
+
+function compareMessages(a: GmailMessage, b: GmailMessage, key: SortKey): number {
+  switch (key) {
+    case 'from':    return a.from.localeCompare(b.from);
+    case 'subject': return a.subject.localeCompare(b.subject);
+    case 'size':    return a.sizeEstimate - b.sizeEstimate;
+    case 'date': {
+      const ta = Date.parse(a.date), tb = Date.parse(b.date);
+      if (isNaN(ta) && isNaN(tb)) return 0;
+      if (isNaN(ta)) return -1;
+      if (isNaN(tb)) return 1;
+      return ta - tb;
+    }
+  }
+}
 
 export default function GmailSearch() {
   const {
@@ -14,10 +37,21 @@ export default function GmailSearch() {
 
   const [templates, setTemplates] = useState<GmailTemplates>({});
   const [template, setTemplate] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('size');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   useEffect(() => {
     getGmailTemplates().then(setTemplates).catch(() => setTemplates({}));
   }, []);
+
+  function onSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(DEFAULT_DIR[key]);
+    }
+  }
 
   const groups = Object.entries(templates).reduce<Record<string, [string, GmailTemplates[string]][]>>(
     (acc, entry) => {
@@ -27,7 +61,15 @@ export default function GmailSearch() {
     }, {},
   );
 
-  const messages = gmailResult?.messages ?? [];
+  const messages = useMemo(() => {
+    const list = [...(gmailResult?.messages ?? [])];
+    list.sort((a, b) => {
+      const cmp = compareMessages(a, b, sortKey);
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [gmailResult, sortKey, sortDir]);
+
   const allSelected = messages.length > 0 && gmailSelectedIds.size === messages.length;
 
   if (gmailScopeError) {
@@ -75,10 +117,18 @@ export default function GmailSearch() {
           <div className="email-list">
             <div className="email-list-header">
               <input type="checkbox" checked={allSelected} onChange={selectAllEmails} />
-              <span className="email-from">From</span>
-              <span className="email-subject">Subject</span>
-              <span className="email-date">Date</span>
-              <span className="email-size">Size</span>
+              <button className="email-from email-sort" onClick={() => onSort('from')}>
+                From {sortKey === 'from' && (sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+              </button>
+              <button className="email-subject email-sort" onClick={() => onSort('subject')}>
+                Subject {sortKey === 'subject' && (sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+              </button>
+              <button className="email-date email-sort" onClick={() => onSort('date')}>
+                Date {sortKey === 'date' && (sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+              </button>
+              <button className="email-size email-sort" onClick={() => onSort('size')}>
+                Size {sortKey === 'size' && (sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />)}
+              </button>
             </div>
             {messages.map(m => (
               <EmailRow

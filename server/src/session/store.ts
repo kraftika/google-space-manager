@@ -35,6 +35,10 @@ export const sessionStore = {
       .run(id, JSON.stringify(data.tokens), data.email, data.displayName);
   },
 
+  updateTokens: (id: string, tokens: Credentials): void => {
+    db.prepare('UPDATE sessions SET tokens = ? WHERE id = ?').run(JSON.stringify(tokens), id);
+  },
+
   delete: (id: string): void => {
     db.prepare('DELETE FROM sessions WHERE id = ?').run(id);
   },

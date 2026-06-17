@@ -169,6 +169,23 @@ a { color: inherit; }
   gap: 16px;
 }
 
+.photos-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  white-space: nowrap;
+  cursor: help;
+  transition: background 0.15s, color 0.15s;
+}
+
+.photos-notice:hover { background: var(--bg); color: var(--text); }
+
 /* ── Account Switcher ─────────────────────────────── */
 
 .account-switcher { position: relative; }
@@ -546,9 +563,9 @@ a { color: inherit; }
 
 .ext-size { font-weight: 500; width: 76px; text-align: right; }
 
-/* ── Panel shared (Gmail / Photos) ────────────────── */
+/* ── Gmail panel ──────────────────────────────────── */
 
-.gmail-panel, .photos-panel { padding-bottom: 64px; }
+.gmail-panel { padding-bottom: 64px; }
 
 .panel-loading {
   display: flex;
@@ -621,7 +638,7 @@ a { color: inherit; }
 
 /* ── Gmail ────────────────────────────────────────── */
 
-.gmail-controls, .photos-controls {
+.gmail-controls {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -657,6 +674,21 @@ a { color: inherit; }
   color: var(--muted);
   font-weight: 600;
 }
+
+.email-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.email-sort:hover { color: var(--text); }
+
+.email-list-header .email-size.email-sort { justify-content: flex-end; }
 
 .email-row { cursor: pointer; }
 .email-row:hover { background: rgba(0,0,0,0.025); }
@@ -694,7 +726,7 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 
-.email-actions-bar, .photos-actions-bar {
+.email-actions-bar {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -710,107 +742,7 @@ a { color: inherit; }
   z-index: 30;
 }
 
-.email-actions-bar > span, .photos-actions-bar > span {
+.email-actions-bar > span {
   color: var(--muted);
   font-size: 13px;
 }
-
-/* ── Photos ───────────────────────────────────────── */
-
-.select-all-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.photos-controls .sort-toggle { margin-left: auto; }
-
-.photos-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  padding: 16px 20px;
-}
-
-.photo-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: var(--surface);
-  cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s;
-}
-
-.photo-card:hover { box-shadow: var(--shadow-sm); }
-
-.photo-card-selected {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary);
-}
-
-.photo-thumb-wrap {
-  position: relative;
-  aspect-ratio: 1;
-  background: var(--bg);
-}
-
-.photo-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.photo-checkbox {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.85);
-  border: 1.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
-.photo-checkbox-on {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.video-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.6);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.photo-meta {
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.photo-name {
-  font-size: 12px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.photo-sub { font-size: 11px; color: var(--muted); }

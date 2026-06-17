@@ -1,16 +1,31 @@
 import { Router, Response } from 'express';
-import { createOAuthClient } from '../auth/oauthClient';
+import { createSessionClient, isInvalidGrant } from '../auth/oauthClient';
+import { sessionStore } from '../session/store';
 import { sessionAuth, AuthenticatedRequest } from '../middleware/sessionAuth';
 import { searchMessages, trashMessages, TEMPLATES } from './scanner';
 
 const router = Router();
+
+function handleApiError(res: Response, sessionId: string, err: unknown, failCode: string): void {
+  if (isInvalidGrant(err)) {
+    sessionStore.delete(sessionId);
+    res.status(401).json({ error: 'REAUTH_REQUIRED', message: 'Your session expired. Please sign in again.' });
+    return;
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  const isScope = message.includes('insufficient') || message.includes('403') || message.includes('PERMISSION_DENIED');
+  res.status(isScope ? 403 : 500).json({
+    error: isScope ? 'INSUFFICIENT_SCOPE' : failCode,
+    message,
+  });
+}
 
 router.get('/templates', (_req, res: Response) => {
   res.json(TEMPLATES);
 });
 
 router.get('/search', sessionAuth, async (req, res: Response) => {
-  const { tokens } = (req as AuthenticatedRequest).session;
+  const { sessionId, tokens } = (req as AuthenticatedRequest).session;
   const template = req.query['template'] as string;
   const pageToken = req.query['pageToken'] as string | undefined;
 
@@ -20,22 +35,16 @@ router.get('/search', sessionAuth, async (req, res: Response) => {
   }
 
   try {
-    const auth = createOAuthClient();
-    auth.setCredentials(tokens);
+    const auth = createSessionClient(sessionId, tokens);
     const result = await searchMessages(auth, template, pageToken);
     res.json(result);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    const isScope = message.includes('insufficient') || message.includes('403');
-    res.status(isScope ? 403 : 500).json({
-      error: isScope ? 'INSUFFICIENT_SCOPE' : 'SEARCH_FAILED',
-      message,
-    });
+    handleApiError(res, sessionId, err, 'SEARCH_FAILED');
   }
 });
 
 router.post('/trash', sessionAuth, async (req, res: Response) => {
-  const { tokens } = (req as AuthenticatedRequest).session;
+  const { sessionId, tokens } = (req as AuthenticatedRequest).session;
   const { messageIds } = req.body as { messageIds?: string[] };
 
   if (!Array.isArray(messageIds) || messageIds.length === 0) {
@@ -44,17 +53,11 @@ router.post('/trash', sessionAuth, async (req, res: Response) => {
   }
 
   try {
-    const auth = createOAuthClient();
-    auth.setCredentials(tokens);
+    const auth = createSessionClient(sessionId, tokens);
     await trashMessages(auth, messageIds);
     res.json({ ok: true, count: messageIds.length });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    const isScope = message.includes('insufficient') || message.includes('403');
-    res.status(isScope ? 403 : 500).json({
-      error: isScope ? 'INSUFFICIENT_SCOPE' : 'TRASH_FAILED',
-      message,
-    });
+    handleApiError(res, sessionId, err, 'TRASH_FAILED');
   }
 });
 

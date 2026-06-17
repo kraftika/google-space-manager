@@ -1,3 +1,4 @@
+import { ImageOff } from 'lucide-react';
 import { useAppState } from '../state/useAppState';
 import AccountSwitcher from '../components/AccountSwitcher';
 import QuotaBar from '../components/QuotaBar';
@@ -7,7 +8,11 @@ import SortToggle from '../components/SortToggle';
 import TreeView from '../components/TreeView/TreeView';
 import Breakdown from '../components/FileTypeBreakdown/Breakdown';
 import GmailSearch from '../components/GmailSearch/GmailSearch';
-import PhotosList from '../components/PhotosList/PhotosList';
+
+const PHOTOS_TOOLTIP =
+  "Google retired the Photos Library API's full-library access on 31 March 2025. " +
+  "Apps can no longer list or delete photos from your library, so this can't be shown here. " +
+  'Open Google Photos to review and free up photo storage.';
 
 export default function MainScreen() {
   const { scanResult, activeTab, setActiveTab } = useAppState();
@@ -18,6 +23,16 @@ export default function MainScreen() {
       <header className="main-header">
         <h1 className="app-title">Drive List</h1>
         <div className="header-right">
+          <a
+            className="photos-notice"
+            href="https://photos.google.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={PHOTOS_TOOLTIP}
+          >
+            <ImageOff size={14} />
+            <span>Manage Photos storage ↗</span>
+          </a>
           <AccountSwitcher />
           <QuotaBar quota={scanResult.quota} />
         </div>
@@ -47,12 +62,6 @@ export default function MainScreen() {
           >
             Gmail
           </button>
-          <button
-            className={`tab${activeTab === 'photos' ? ' tab-active' : ''}`}
-            onClick={() => setActiveTab('photos')}
-          >
-            Photos
-          </button>
         </div>
         {activeTab === 'tree' && (
           <div className="tab-bar-controls">
@@ -66,7 +75,6 @@ export default function MainScreen() {
         {activeTab === 'tree' && <TreeView />}
         {activeTab === 'breakdown' && <Breakdown />}
         {activeTab === 'gmail' && <GmailSearch />}
-        {activeTab === 'photos' && <PhotosList />}
       </div>
     </div>
   );
