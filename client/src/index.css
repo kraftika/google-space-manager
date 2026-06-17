@@ -545,3 +545,272 @@ a { color: inherit; }
 .ext-count { font-size: 12px; color: var(--muted); }
 
 .ext-size { font-weight: 500; width: 76px; text-align: right; }
+
+/* ── Panel shared (Gmail / Photos) ────────────────── */
+
+.gmail-panel, .photos-panel { padding-bottom: 64px; }
+
+.panel-loading {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.panel-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.scope-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px;
+  padding: 14px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.scope-error-banner span { flex: 1; }
+
+.scope-error-btn {
+  background: var(--red);
+  color: white;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.scope-error-btn:hover { opacity: 0.9; }
+
+.load-more-btn {
+  display: block;
+  margin: 16px auto;
+  padding: 8px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.load-more-btn:hover:not(:disabled) { background: var(--bg); }
+.load-more-btn:disabled { color: var(--muted); cursor: default; }
+
+.action-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--red);
+  color: white;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.action-danger:hover { opacity: 0.9; }
+
+/* ── Gmail ────────────────────────────────────────── */
+
+.gmail-controls, .photos-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.template-select {
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  min-width: 220px;
+}
+
+.email-list {}
+
+.email-list-header, .email-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.email-list-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.email-row { cursor: pointer; }
+.email-row:hover { background: rgba(0,0,0,0.025); }
+.email-row-selected { background: #eff6ff; }
+.email-row-selected:hover { background: #e0efff; }
+
+.email-from {
+  width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.email-subject {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.email-date {
+  width: 110px;
+  color: var(--muted);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.email-size {
+  width: 76px;
+  text-align: right;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.email-actions-bar, .photos-actions-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+  z-index: 30;
+}
+
+.email-actions-bar > span, .photos-actions-bar > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── Photos ───────────────────────────────────────── */
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.photos-controls .sort-toggle { margin-left: auto; }
+
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.photo-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.photo-card:hover { box-shadow: var(--shadow-sm); }
+
+.photo-card-selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.photo-thumb-wrap {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--bg);
+}
+
+.photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-checkbox {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.85);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.photo-checkbox-on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.video-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo-meta {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.photo-name {
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-sub { font-size: 11px; color: var(--muted); }

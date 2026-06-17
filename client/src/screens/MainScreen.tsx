@@ -6,6 +6,8 @@ import OwnerToggle from '../components/OwnerToggle';
 import SortToggle from '../components/SortToggle';
 import TreeView from '../components/TreeView/TreeView';
 import Breakdown from '../components/FileTypeBreakdown/Breakdown';
+import GmailSearch from '../components/GmailSearch/GmailSearch';
+import PhotosList from '../components/PhotosList/PhotosList';
 
 export default function MainScreen() {
   const { scanResult, activeTab, setActiveTab } = useAppState();
@@ -39,6 +41,18 @@ export default function MainScreen() {
           >
             File Types
           </button>
+          <button
+            className={`tab${activeTab === 'gmail' ? ' tab-active' : ''}`}
+            onClick={() => setActiveTab('gmail')}
+          >
+            Gmail
+          </button>
+          <button
+            className={`tab${activeTab === 'photos' ? ' tab-active' : ''}`}
+            onClick={() => setActiveTab('photos')}
+          >
+            Photos
+          </button>
         </div>
         {activeTab === 'tree' && (
           <div className="tab-bar-controls">
@@ -49,7 +63,10 @@ export default function MainScreen() {
       </div>
 
       <div className="tab-content">
-        {activeTab === 'tree' ? <TreeView /> : <Breakdown />}
+        {activeTab === 'tree' && <TreeView />}
+        {activeTab === 'breakdown' && <Breakdown />}
+        {activeTab === 'gmail' && <GmailSearch />}
+        {activeTab === 'photos' && <PhotosList />}
       </div>
     </div>
   );
